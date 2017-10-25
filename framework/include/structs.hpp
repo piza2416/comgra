@@ -6,6 +6,27 @@
 // use gl definitions from glbinding 
 using namespace gl;
 
+struct planet {
+  //default constructor
+  planet():
+    _size{1.0},
+    _rotation_speed{1.0},
+    _speed{1.0},
+    _distance_to_origin{.0} {}
+
+  //constructor
+  planet(float size, float rotatio_speed, float speed, float distance_to_origin):
+    _size{size},
+    _rotation_speed{rotatio_speed},
+    _speed{speed},
+    _distance_to_origin{distance_to_origin} {}
+
+  float _size;
+  float _rotation_speed;
+  float _speed;
+  float _distance_to_origin;
+};
+
 // gpu representation of model
 struct model_object {
   // vertex array object

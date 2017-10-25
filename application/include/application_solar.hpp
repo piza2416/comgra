@@ -4,6 +4,8 @@
 #include "application.hpp"
 #include "model.hpp"
 #include "structs.hpp"
+#include <vector>
+#include <memory>
 
 // gpu representation of model
 class ApplicationSolar : public Application {
@@ -21,6 +23,9 @@ class ApplicationSolar : public Application {
   void keyCallback(int key, int scancode, int action, int mods);
   //handle delta mouse movement input
   void mouseCallback(double pos_x, double pos_y);
+  // calculates and uploads 
+  // the Model- and Normal Matrix
+  void upload_planet_transforms (planet const& Planet, int counter) const;
 
   // draw all objects
   void render() const;
@@ -32,6 +37,8 @@ class ApplicationSolar : public Application {
 
   // cpu representation of model
   model_object planet_object;
+  //std::vector<std::shared_ptr<planet>> _planet_container;
+  std::vector<planet> _planet_container;
 };
 
 #endif

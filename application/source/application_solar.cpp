@@ -25,16 +25,81 @@ ApplicationSolar::ApplicationSolar(std::string const& resource_path)
 {
   initializeGeometry();
   initializeShaderPrograms();
+  planet sonne{0.2, 0, 0, 0};
+  planet erde{0.02, 0.2, 1, 1};
+  planet mond{0.01, 0.2, 5, 0.1};
+  planet pluto{0.009, 0.5, 1, 3};
+  planet venus{0.05, 0.23, 1, 2.8};
+  planet venus_mond{0.01, 0.23, 8, 0.1};
+  planet merkur{0.015, 0.4, 2, 0.7};
+  planet jupiter{0.1, 0.1, 1, 2};
+  planet mir{0.005, 0.1, 1, 1.1};
+  planet sunburn{0.05, 1, 1, 0.25};
+  _planet_container.push_back(sonne);
+  _planet_container.push_back(erde);
+  _planet_container.push_back(mond);
+  _planet_container.push_back(pluto);
+  _planet_container.push_back(venus);
+  _planet_container.push_back(venus_mond);
+  _planet_container.push_back(merkur);
+  _planet_container.push_back(jupiter);
+  _planet_container.push_back(mir);
+  _planet_container.push_back(sunburn);
 }
 
 void ApplicationSolar::render() const {
+  int counter = 0;
+  for(auto i : _planet_container) {
+    upload_planet_transforms(i, counter);
+    counter ++;
+  }
+}
+
+void ApplicationSolar::upload_planet_transforms (planet const& Planet, int counter) const {
+  // bind shader to upload uniforms
+  glUseProgram(m_shaders.at("planet").handle);
+
+  glm::fmat4 model_matrix;
+
+  //rotates around the center
+  model_matrix = glm::rotate(glm::fmat4{}, float(glfwGetTime()) * Planet._rotation_speed, glm::fvec3{0.0f, 1.0f, 0.0f});
+
+  //rotates moon around the earth
+  if (counter == 2 ^ counter == 5) {
+    //translate to other center
+    model_matrix = glm::translate(model_matrix, glm::fvec3{0.0f, 0.0f, -1.0f * _planet_container[counter -1]._distance_to_origin});
+    //rotates
+    model_matrix = glm::rotate(model_matrix, float(glfwGetTime()) * Planet._speed, glm::fvec3{0.0f, 1.0f, 0.0f});
+  }
+  //rotates the rest around the center
+  model_matrix = glm::translate(model_matrix, glm::fvec3{0.0f, 0.0f, -1.0f * Planet._distance_to_origin});
+  model_matrix = glm::rotate(model_matrix, float(glfwGetTime()) * Planet._speed, glm::fvec3{0.0f, 1.0f, 0.0f});
+  //to set the size
+  glm::vec3 p_size {Planet._size,Planet._size,Planet._size};
+  model_matrix = glm::scale(model_matrix, p_size);
+
+
+  glUniformMatrix4fv(m_shaders.at("planet").u_locs.at("ModelMatrix"), 1, GL_FALSE, glm::value_ptr(model_matrix));
+
+  // extra matrix for normal transformation to keep them orthogonal to surface
+  glm::fmat4 normal_matrix = glm::inverseTranspose(glm::inverse(m_view_transform) * model_matrix);
+  glUniformMatrix4fv(m_shaders.at("planet").u_locs.at("NormalMatrix"), 1, GL_FALSE, glm::value_ptr(normal_matrix)); 
+  
+  // bind the VAO to draw
+  glBindVertexArray(planet_object.vertex_AO);
+
+  // draw bound vertex array using bound shader
+  glDrawElements(planet_object.draw_mode, planet_object.num_elements, model::INDEX.type, NULL);
+}
+
+  /*
   // bind shader to upload uniforms
   glUseProgram(m_shaders.at("planet").handle);
 
   glm::fmat4 model_matrix = glm::rotate(glm::fmat4{}, float(glfwGetTime()), glm::fvec3{0.0f, 1.0f, 0.0f});
-  model_matrix = glm::translate(model_matrix, glm::fvec3{0.0f, 0.0f, -1.0f});
-  glUniformMatrix4fv(m_shaders.at("planet").u_locs.at("ModelMatrix"),
-                     1, GL_FALSE, glm::value_ptr(model_matrix));
+  model_matrix = glm::translate(model_matrix, glm::fvec3{1.0f, 0.0f, -1.0f});
+
+  glUniformMatrix4fv(m_shaders.at("planet").u_locs.at("ModelMatrix"), 1, GL_FALSE, glm::value_ptr(model_matrix));
 
   // extra matrix for normal transformation to keep them orthogonal to surface
   glm::fmat4 normal_matrix = glm::inverseTranspose(glm::inverse(m_view_transform) * model_matrix);
@@ -46,8 +111,7 @@ void ApplicationSolar::render() const {
 
   // draw bound vertex array using bound shader
   glDrawElements(planet_object.draw_mode, planet_object.num_elements, model::INDEX.type, NULL);
-}
-
+*/
 void ApplicationSolar::updateView() {
   // vertices are transformed in camera space, so camera transform must be inverted
   glm::fmat4 view_matrix = glm::inverse(m_view_transform);
@@ -88,6 +152,10 @@ void ApplicationSolar::keyCallback(int key, int scancode, int action, int mods) 
 //handle delta mouse movement input
 void ApplicationSolar::mouseCallback(double pos_x, double pos_y) {
   // mouse handling
+  m_view_transform = glm::translate(m_view_transform,glm::fvec3{0.0f, float(pos_y)/100, 0.0f});
+  m_view_transform = glm::rotate(m_view_transform, float(pos_x)/1000, glm::fvec3{0.0f, -1.0f, 0.0f});
+  // upload matrix to gpu
+  updateView();
 }
 
 // load shader programs
